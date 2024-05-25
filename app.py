@@ -1,10 +1,20 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from datetime import datetime
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 app = Flask(__name__)
 
-# Lista para armazenar os registros em memória
-registros = []
+cred = credentials.Certificate("cancela-f0008-firebase-adminsdk-vf72o-73f406ccd2.json")
+try:
+    firebase_admin.initialize_app(cred)
+    print('Conectado com o banco de dados com sucesso!')
+except:
+    print('Erro ao conectar com o banco de dados')
+
+db = firestore.client()
+
+cancela_reference = db.collection("Cancela")
 
 
 # Função para registrar movimentação
@@ -12,13 +22,14 @@ registros = []
 def registrar():
     data = request.get_json()
     tipo = data.get('tipo')
-    if tipo not in ['entrada', 'saida']:
+    if tipo not in ['Entrada', 'Saída']:
         return jsonify({'error': 'Tipo inválido, deve ser "entrada" ou "saida"'}), 400  # Filtra apenas o input correto
     registro = {
         'tipo': tipo,
-        'timestamp': datetime.now().strftime('%d-%m-%Y %H:%M:%S')}  # Registra a movimentação com seu tipo (entrada/saída) e o momento em que foi recebido o input
+        'data': datetime.now().strftime(
+            '%d-%m-%Y %H:%M:%S')}  # Registra a movimentação com seu tipo (entrada/saída) e o momento em que foi recebido o input
 
-    registros.append(registro) # Adiciona o registro à lista de registros
+    cancela_reference.add(registro)  # Adiciona o registro à lista de registros
 
     return jsonify({'message': 'Registro criado com sucesso'}), 201
 
@@ -26,10 +37,27 @@ def registrar():
 # Função para listar os registros (quantas entradas e quantas saídas houveram)
 @app.route('/registros', methods=['GET'])
 def listar_registros():
-    entradas = sum(1 for r in registros if r['tipo'] == 'entrada')  # Adiciona ao número de entradas
-    saidas = sum(1 for r in registros if r['tipo'] == 'saida')  # Adiciona o número de saídas
+    registros = cancela_reference.get()
+    entradas = 0
+    saidas = 0
+    novos_registros = []
+
+    for registro in registros:
+        registro.to_dict()
+        if registro.get("tipo") == "Entrada":
+            entradas += 1
+        elif registro.get("tipo") == "Saída":
+            saidas += 1
+
+        # Save the required fields into novos_registros
+        novos_registros.append({
+            "id": registro.id,  # Get the document ID
+            "tipo": registro.get("tipo"),  # Get the "tipo" field
+            "data": registro.get("data")  # Get the "data" field
+        })
+
     return jsonify({
-        'registros': registros,
+        'registros': novos_registros,
         'contagem': {
             'entradas': entradas,
             'saidas': saidas
@@ -39,45 +67,10 @@ def listar_registros():
 
 # Código da interface
 @app.route('/')
-def index():
-    return """
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Registros de Entrada/Saída</title>
-        <script>
-            async function fetchRegistros() {
-                const response = await fetch('/registros');
-                const data = await response.json();
-                const registrosDiv = document.getElementById('registros');
-                const entradasCount = document.getElementById('entradasCount');
-                const saidasCount = document.getElementById('saidasCount');
-
-                registrosDiv.innerHTML = data.registros.map(r => `<p>${r.tipo} - ${r.timestamp}</p>`).join('');
-                entradasCount.innerText = data.contagem.entradas;
-                saidasCount.innerText = data.contagem.saidas;
-            }
-
-            window.onload = function() {
-                fetchRegistros();
-                setInterval(fetchRegistros, 5000); // Atualiza a cada 5 segundos
-            };
-        </script>
-    </head>
-    <body>
-        <h1>Registros de Entrada/Saída</h1>       
-        <div id="registros"></div>
-        <div>
-            <p>Entradas: <span id="entradasCount">0</span></p>
-            <p>Saídas: <span id="saidasCount">0</span></p>
-        </div>
-    </body>
-    </html>
-    """
+def interface():
+    return render_template('interface.html')
 
 
 # Programa Principal
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

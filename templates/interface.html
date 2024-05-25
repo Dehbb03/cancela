@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registros de Entrada/Saída</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #ccc;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #fff;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        #registros {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            background-color: #2a2a2a;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .registro-column {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .registro-column h2 {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+        }
+
+        .registro-column p {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 8px;
+        }
+
+        #contagem {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+        }
+
+        #contagem p {
+            font-size: 18px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        #contagem span {
+            font-weight: bold;
+            color: #fff;
+        }
+    </style>
+    <script>
+        async function fetchRegistros() {
+            const response = await fetch('/registros');
+            const data = await response.json();
+            const entradasDiv = document.getElementById('entradas');
+            const saidasDiv = document.getElementById('saidas');
+            const entradasCount = document.getElementById('entradasCount');
+            const saidasCount = document.getElementById('saidasCount');
+
+            entradasDiv.innerHTML = data.registros
+                .filter(r => r.tipo === 'Entrada')
+                .map(r => `<p>${r.tipo} - ${r.data}</p>`)
+                .join('');
+
+            saidasDiv.innerHTML = data.registros
+                .filter(r => r.tipo === 'Saída')
+                .map(r => `<p>${r.tipo} - ${r.data}</p>`)
+                .join('');
+
+            entradasCount.innerText = data.contagem.entradas;
+            saidasCount.innerText = data.contagem.saidas;
+        }
+
+        window.onload = function() {
+            fetchRegistros();
+            setInterval(fetchRegistros, 5000); // Atualiza a cada 5 segundos
+        };
+    </script>
+</head>
+<body>
+    <h1>Registros de Entrada/Saída</h1>
+    <div id="registros">
+        <div class="registro-column">
+            <h2>Entradas</h2>
+            <div id="entradas"></div>
+        </div>
+        <div class="registro-column">
+            <h2>Saídas</h2>
+            <div id="saidas"></div>
+        </div>
+    </div>
+    <div id="contagem">
+        <p>Entradas: <span id="entradasCount">0</span></p>
+        <p>Saídas: <span id="saidasCount">0</span></p>
+    </div>
+</body>
+</html>
