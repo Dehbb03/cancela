@@ -14,5 +14,6 @@ Para registrar uma movimentação de entrada ou saída, envie uma requisição P
 
 ```json
 {
+    "estacionamento": "Estacionamento",
     "tipo": "Entrada"
 }
