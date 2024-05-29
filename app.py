@@ -5,6 +5,7 @@ from firebase_admin import credentials, firestore
 
 app = Flask(__name__)
 
+# CONEXÃO COM BANCO DE DADOS
 cred = credentials.Certificate("cancela-f0008-firebase-adminsdk-vf72o-73f406ccd2.json")
 try:
     firebase_admin.initialize_app(cred)
@@ -13,35 +14,39 @@ except:
     print('Erro ao conectar com o banco de dados')
 
 db = firestore.client()
-
 cancela_reference = db.collection("Cancela")
 
 
-# Função para registrar movimentação
+# FUNÇÃO PARA REGISTRAR MOVIMENTAÇÃO
 @app.route('/registro', methods=['POST'])
 def registrar():
     data = request.get_json()
     tipo = data.get('tipo')
     if tipo not in ['Entrada', 'Saída']:
-        return jsonify({'error': 'Tipo inválido, deve ser "entrada" ou "saida"'}), 400  # Filtra apenas o input correto
+        return jsonify({'error': 'Tipo inválido, deve ser "Entrada" ou "Saída"'}), 400
+    estacionamento = data.get('estacionamento')
+    if estacionamento not in ['Ribeiro', 'Cardoso']:
+        return jsonify({'error': 'Estacionamento inválido'}), 400
     registro = {
+        'estacionamento': estacionamento,
         'tipo': tipo,
         'data': datetime.now().strftime(
-            '%d-%m-%Y %H:%M:%S')}  # Registra a movimentação com seu tipo (entrada/saída) e o momento em que foi recebido o input
+            '%d-%m-%Y %H:%M:%S')}
 
-    cancela_reference.add(registro)  # Adiciona o registro à lista de registros
-
+    cancela_reference.add(registro)
     return jsonify({'message': 'Registro criado com sucesso'}), 201
 
 
-# Função para listar os registros (quantas entradas e quantas saídas houveram)
+# FUNÇÃO PARA LISTAR REGISTROS
 @app.route('/registros', methods=['GET'])
 def listar_registros():
     registros = cancela_reference.get()
+    estacionamento = cancela_reference.get()
     entradas = 0
     saidas = 0
     novos_registros = []
 
+    # CONTAGEM DE ENTRADAS E SAÍDAS
     for registro in registros:
         registro.to_dict()
         if registro.get("tipo") == "Entrada":
@@ -49,11 +54,12 @@ def listar_registros():
         elif registro.get("tipo") == "Saída":
             saidas += 1
 
-        # Save the required fields into novos_registros
+        # SALVA OS CAMPOS EM novos_registros
         novos_registros.append({
-            "id": registro.id,  # Get the document ID
-            "tipo": registro.get("tipo"),  # Get the "tipo" field
-            "data": registro.get("data")  # Get the "data" field
+            "id": registro.id,
+            "estacionamento": registro.get("estacionamento"),
+            "tipo": registro.get("tipo"),
+            "data": registro.get("data")
         })
 
     return jsonify({
@@ -65,12 +71,12 @@ def listar_registros():
     })
 
 
-# Código da interface
+# INTERFACE
 @app.route('/')
 def interface():
     return render_template('interface.html')
 
 
-# Programa Principal
+# PROGRAMA PRINCIPAL
 if __name__ == '__main__':
     app.run()

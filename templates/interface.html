@@ -27,8 +27,8 @@
         #registros {
             display: flex;
             justify-content: space-between;
-            width: 100%;
-            max-width: 800px;
+            width: 90%;
+            max-width: 1200px;
             background-color: #2a2a2a;
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -59,8 +59,8 @@
         #contagem {
             display: flex;
             justify-content: space-between;
-            width: 100%;
-            max-width: 800px;
+            width: 90%;
+            max-width: 1200px;
             margin-bottom: 20px;
         }
 
@@ -81,6 +81,7 @@
         async function fetchRegistros() {
             const response = await fetch('/registros');
             const data = await response.json();
+            const estacionamento = document.getElementById('estacionamento');
             const entradasDiv = document.getElementById('entradas');
             const saidasDiv = document.getElementById('saidas');
             const entradasCount = document.getElementById('entradasCount');
@@ -88,12 +89,12 @@
 
             entradasDiv.innerHTML = data.registros
                 .filter(r => r.tipo === 'Entrada')
-                .map(r => `<p>${r.tipo} - ${r.data}</p>`)
+                .map(r => `<p>${r.tipo} - ${r.data} - Estacionamento: ${r.estacionamento}</p>`)
                 .join('');
 
             saidasDiv.innerHTML = data.registros
                 .filter(r => r.tipo === 'Saída')
-                .map(r => `<p>${r.tipo} - ${r.data}</p>`)
+                .map(r => `<p>${r.tipo} - ${r.data} - Estacionamento: ${r.estacionamento}</p>`)
                 .join('');
 
             entradasCount.innerText = data.contagem.entradas;
